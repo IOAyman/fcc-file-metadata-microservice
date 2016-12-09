@@ -1,35 +1,28 @@
 const express = require('express')
-const mongoose = require('mongoose')
-const fs = require('fs')
-
-
-// setup env
-try {
-  fs.accessSync(`${__dirname}/.env`, fs.constants.R_OK)
-  require('dotenv').config()
-} catch (error) { console.warn(error) }
+const upload = require('multer')({ dest: './store' })
 
 
 // setup app
 const app = express()
+app.set('views', '.')
+app.set('view engine', 'pug')
 
 
-// setup db
-const { DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_USER_PASS } = process.env
-mongoose.Promise = global.Promise
-mongoose.connect(`mongodb://${DB_USER}:${DB_USER_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}`)
-mongoose.connection.on('connected', () => console.info('DB connected!'))
-mongoose.connection.on('error', console.error)
+// render page
+app.get('*', (req, res, next) =>
+  res.render('index'))
 
+// receive file
+app.post('/',
+        upload.single('iofile'),
+        (req, res, next) => {
+          const { originalname:filename, size, mimetype:mime } = req.file
 
-// routes
-app.use('/', require('./routes'))
+          res.json({ filename, size, mime })
+        })
 
-// about this project
-app.all('*', (req, res, next) => res.end(`
-Hi, you curious (^_^). I'm Ayman Nedjmeddine.
-Plase find details at https://github.com/IOAyman/fcc-file-metadata-microservice
-`))
+// Woops!
+app.use((error, req, res, next) => res.json({ error }))
 
 
 // go!
